@@ -76,7 +76,7 @@ class Tree {
     }
 
     if (!this.isBalanced()) {
-      this.rebalance();
+      this.#rebalance();
     }
   }
 
@@ -149,8 +149,10 @@ class Tree {
 
   find(value) {
     let currNode = this.root;
+    let found = 0;
     while (currNode !== null) {
       if (currNode.value === value) {
+        found = 1;
         break;
       }
 
@@ -160,7 +162,11 @@ class Tree {
         currNode = currNode.right;
       }
     }
-    return currNode;
+    if (found) {
+      return currNode;
+    }
+
+    return false;
   }
 
   levelOrderForEach(callback) {
@@ -261,7 +267,7 @@ class Tree {
     return check.call(this, node);
   }
 
-  rebalance() {
+  #rebalance() {
     const orderedElements = [];
     this.inOrderForEach((node) => {
       orderedElements.push(node.value);
