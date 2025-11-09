@@ -26,6 +26,7 @@ function prepArray(array) {
   for (let i = 1; i < array.length; i++) {
     if (array[i] === array[i - 1]) {
       array.splice(i, 1);
+      i--; // Recheck the same index
     }
   }
   return array;
@@ -35,16 +36,12 @@ function buildTree(array, left = 0, right = array.length - 1) {
   if (left > right) {
     return null;
   }
-
   let middle = Math.floor((left + right) / 2);
-
   let leftSub = buildTree(array, left, middle - 1);
   let rightSub = buildTree(array, middle + 1, right);
-
   const newNode = new Node(array[middle]);
   newNode.left = leftSub;
   newNode.right = rightSub;
-
   return newNode;
 }
 
@@ -59,7 +56,7 @@ class Tree {
     let currNode = this.root;
     const newNode = new Node(value);
 
-    while (true) {
+    while (currNode !== null) {
       if (value < currNode.value) {
         if (currNode.left === null) {
           currNode.left = newNode;
@@ -72,6 +69,9 @@ class Tree {
           break;
         }
         currNode = currNode.right;
+      } else {
+        console.log(`A node with value ${value} already exists!`);
+        return;
       }
     }
 
@@ -88,15 +88,15 @@ class Tree {
       if (currNode.value === value) {
         break;
       }
-
       parent = currNode;
-
       if (value < currNode.value) {
         currNode = currNode.left;
       } else if (value > currNode.value) {
         currNode = currNode.right;
       }
     }
+
+    if (currNode === null) return; // Not found
 
     if (currNode.left === null && currNode.right === null) {
       if (parent === null) {
@@ -106,7 +106,6 @@ class Tree {
       } else {
         parent.right = null;
       }
-
       return;
     }
 
@@ -131,41 +130,26 @@ class Tree {
       succParent = succ;
       succ = succ.left;
     }
-
     currNode.value = succ.value;
-
     if (succParent === currNode) {
       currNode.right = succ.right;
     } else if (succParent.left === succ) {
-      if (succ.right !== null) {
-        succParent.left = succ.right;
-      } else {
-        succParent.left = null;
-      }
-    } else {
-      succParent.right = null;
+      succParent.left = succ.right;
     }
   }
 
   find(value) {
     let currNode = this.root;
-    let found = 0;
     while (currNode !== null) {
       if (currNode.value === value) {
-        found = 1;
-        break;
+        return currNode;
       }
-
       if (value < currNode.value) {
         currNode = currNode.left;
       } else {
         currNode = currNode.right;
       }
     }
-    if (found) {
-      return currNode;
-    }
-
     return false;
   }
 
@@ -173,21 +157,13 @@ class Tree {
     if (typeof callback !== 'function') {
       throw new TypeError('Expected a function!');
     }
-
     const queue = [];
-    queue.push(this.root);
-
+    if (this.root !== null) queue.push(this.root);
     while (queue.length !== 0) {
       const u = queue.shift();
-
       callback(u);
-
-      if (u.left) {
-        queue.push(u.left);
-      }
-      if (u.right) {
-        queue.push(u.right);
-      }
+      if (u.left) queue.push(u.left);
+      if (u.right) queue.push(u.right);
     }
   }
 
@@ -224,47 +200,37 @@ class Tree {
   height(value) {
     function getHeight(node) {
       if (!node) return 0;
-
       return 1 + Math.max(getHeight(node.left), getHeight(node.right));
     }
-
     const node = this.find(value);
-    return getHeight(node);
+    return node ? getHeight(node) : 0; // Safety if node not found
   }
 
   depth(value) {
     let node = this.root;
     let depth = 0;
-
-    while (node.value !== value) {
+    while (node !== null && node.value !== value) {
       if (value > node.value) {
         node = node.right;
       } else if (value < node.value) {
         node = node.left;
       }
-
       depth += 1;
     }
-
-    return depth;
+    return node === null ? -1 : depth; // Changed: return -1 if not found
   }
 
   isBalanced() {
-    function check(node) {
-      if (!node) return true;
-
-      const left = node.left ? this.height(node.left.value) : 0;
-      const right = node.right ? this.height(node.right.value) : 0;
-
-      if (Math.abs(left - right) > 1) {
-        return false;
-      }
-
-      return check.call(this, node.left) && check.call(this, node.right);
-    }
-
-    const node = this.root;
-    return check.call(this, node);
+    const check = (node) => {
+      if (!node) return 0;
+      let left = check(node.left);
+      if (left === -1) return -1;
+      let right = check(node.right);
+      if (right === -1) return -1;
+      if (Math.abs(left - right) > 1) return -1;
+      return Math.max(left, right) + 1;
+    };
+    return check(this.root) !== -1;
   }
 
   #rebalance() {
@@ -276,8 +242,8 @@ class Tree {
   }
 }
 
+// usage
 const array = [];
-
 for (let i = 1; i <= 20; i++) {
   array.push(Math.floor(Math.random() * 100));
 }
